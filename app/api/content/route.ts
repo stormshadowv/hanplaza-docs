@@ -1,10 +1,28 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getCorsHeaders } from "@/lib/cors"
+import { verifyToken } from "@/lib/jwt"
 
 export async function GET(request: Request) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
+  // Проверка аутентификации
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user) {
+    return NextResponse.json(
+      { error: "Неверный токен" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const categoryId = searchParams.get("categoryId")
@@ -35,6 +53,23 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
+  // Проверка аутентификации и прав администратора
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user || user.role !== "admin") {
+    return NextResponse.json(
+      { error: "Доступ запрещен. Требуются права администратора" },
+      { status: 403, headers: corsHeaders }
+    )
+  }
+
   try {
     const body = await request.json()
     const { title, description, categoryId, type, duration, thumbnail, videoUrl, content } = body

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getCorsHeaders } from "@/lib/cors"
+import { verifyToken } from "@/lib/jwt"
 
 export async function GET(
   request: Request,
@@ -8,6 +9,23 @@ export async function GET(
 ) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
+  // Проверка аутентификации
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user) {
+    return NextResponse.json(
+      { error: "Неверный токен" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
   try {
     const content = await prisma.content.findUnique({
       where: { id: params.id },

@@ -28,24 +28,34 @@ export default function CategoryPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Загружаем категорию и контент
-        const [categoriesData, contentData] = await Promise.all([
-          apiClient.getCategories(),
-          fetch(`/api/content?categoryId=${categorySlug}`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("hanplaza_token")}`,
-            },
-          }).then(res => res.json())
-        ])
-
+        // Сначала загружаем категорию чтобы получить её ID
+        const categoriesData = await apiClient.getCategories()
         const foundCategory = categoriesData.categories.find((c: any) => c.slug === categorySlug)
-        setCategory(foundCategory || null)
         
-        if (contentData.content) {
+        if (!foundCategory) {
+          setLoading(false)
+          return
+        }
+        
+        setCategory(foundCategory)
+
+        // Теперь загружаем контент по ID категории
+        const contentResponse = await fetch(`/api/content?categoryId=${foundCategory.id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("hanplaza_token")}`,
+          },
+        })
+        
+        const contentData = await contentResponse.json()
+        
+        if (contentData.content && contentData.content.length > 0) {
           setAllContent(contentData.content)
           // Выбираем первое видео по умолчанию, если есть
           const firstVideo = contentData.content.find((c: Content) => c.type === "video")
           setSelectedContent(firstVideo || contentData.content[0] || null)
+        } else {
+          setAllContent([])
+          setSelectedContent(null)
         }
       } catch (error) {
         console.error('Failed to load data:', error)
@@ -246,7 +256,15 @@ export default function CategoryPage() {
                     selectedContent?.type === "video" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
                   }`}
                 >
-                  {filteredContent.map((item) => (
+                  {filteredContent.length === 0 ? (
+                    <div className="col-span-full text-center py-12 text-muted-foreground">
+                      {filter === "all" 
+                        ? "В этой категории пока нет материалов" 
+                        : `${getContentTypeLabel(filter)} в этой категории пока нет`
+                      }
+                    </div>
+                  ) : (
+                    filteredContent.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => handleViewContent(item)}
@@ -283,7 +301,8 @@ export default function CategoryPage() {
                         </div>
                       </div>
                     </button>
-                  ))}
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </div>
