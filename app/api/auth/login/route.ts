@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
-      { error: 'Ошибка сервера' },
+      { error: error },
       { status: 500, headers: corsHeaders }
     )
   }
