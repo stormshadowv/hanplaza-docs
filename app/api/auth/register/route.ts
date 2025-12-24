@@ -3,6 +3,17 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { signToken } from '@/lib/jwt'
 
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password, name, role } = await request.json()
@@ -10,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email и пароль обязательны' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -22,7 +33,7 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: 'Пользователь с таким email уже существует' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -56,13 +67,13 @@ export async function POST(request: NextRequest) {
           role: user.role,
         },
       },
-      { status: 201 }
+      { status: 201, headers: corsHeaders }
     )
   } catch (error) {
     console.error('Register error:', error)
     return NextResponse.json(
       { error: 'Ошибка сервера' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
