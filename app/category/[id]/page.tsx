@@ -4,33 +4,49 @@ import { AuthGuard } from "@/components/auth-guard"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { apiClient, Category, Video } from "@/lib/api-client"
-import { ArrowLeft, Clock, Eye, Calendar } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { apiClient } from "@/lib/api-client"
+import type { Content } from "@/lib/data"
+import { ArrowLeft, Clock, Eye, Calendar, Video, BookOpen, FileText } from "lucide-react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+
+type ContentFilter = "all" | "video" | "instruction" | "article"
 
 export default function CategoryPage() {
   const params = useParams()
+  const router = useRouter()
   const categorySlug = params.id as string
-  const [category, setCategory] = useState<Category | null>(null)
-  const [videos, setVideos] = useState<Video[]>([])
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
+  
+  const [category, setCategory] = useState<any>(null)
+  const [allContent, setAllContent] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<ContentFilter>("all")
+  const [selectedContent, setSelectedContent] = useState<Content | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Загружаем категории и видео
-        const [categoriesData, videosData] = await Promise.all([
+        // Загружаем категорию и контент
+        const [categoriesData, contentData] = await Promise.all([
           apiClient.getCategories(),
-          apiClient.getVideos(categorySlug)
+          fetch(`/api/content?categoryId=${categorySlug}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("hanplaza_token")}`,
+            },
+          }).then(res => res.json())
         ])
 
-        const foundCategory = categoriesData.categories.find(c => c.slug === categorySlug)
+        const foundCategory = categoriesData.categories.find((c: any) => c.slug === categorySlug)
         setCategory(foundCategory || null)
-        setVideos(videosData.videos)
-        setSelectedVideo(videosData.videos[0] || null)
+        
+        if (contentData.content) {
+          setAllContent(contentData.content)
+          // Выбираем первое видео по умолчанию, если есть
+          const firstVideo = contentData.content.find((c: Content) => c.type === "video")
+          setSelectedContent(firstVideo || contentData.content[0] || null)
+        }
       } catch (error) {
         console.error('Failed to load data:', error)
       } finally {
@@ -41,12 +57,43 @@ export default function CategoryPage() {
     loadData()
   }, [categorySlug])
 
-  useEffect(() => {
-    // Увеличиваем счетчик просмотров при выборе видео
-    if (selectedVideo) {
-      apiClient.incrementVideoViews(selectedVideo.id).catch(console.error)
+  const filteredContent = filter === "all" 
+    ? allContent 
+    : allContent.filter((item) => item.type === filter)
+
+  const getContentIcon = (type: string) => {
+    switch (type) {
+      case "video":
+        return <Video className="h-3 w-3" />
+      case "instruction":
+        return <BookOpen className="h-3 w-3" />
+      case "article":
+        return <FileText className="h-3 w-3" />
+      default:
+        return null
     }
-  }, [selectedVideo])
+  }
+
+  const getContentTypeLabel = (type: string) => {
+    switch (type) {
+      case "video":
+        return "Видео"
+      case "instruction":
+        return "Инструкция"
+      case "article":
+        return "Статья"
+      default:
+        return ""
+    }
+  }
+
+  const handleViewContent = (item: Content) => {
+    if (item.type === "video") {
+      setSelectedContent(item)
+    } else {
+      router.push(`/content/${item.id}`)
+    }
+  }
 
   if (loading) {
     return (
@@ -92,85 +139,147 @@ export default function CategoryPage() {
             <p className="text-muted-foreground">{category.description}</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Video Player */}
-            <div className="lg:col-span-2">
-              <Card className="overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="aspect-video bg-black">
-                    <iframe
-                      className="w-full h-full"
-                      src={selectedVideo?.videoUrl}
-                      title={selectedVideo?.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Content filters */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            <Button
+              variant={filter === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter("all")}
+              className="gap-2"
+            >
+              {"Все материалы"} ({allContent.length})
+            </Button>
+            <Button
+              variant={filter === "video" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter("video")}
+              className="gap-2"
+            >
+              <Video className="h-4 w-4" />
+              {"Видео"} ({allContent.filter((c) => c.type === "video").length})
+            </Button>
+            <Button
+              variant={filter === "instruction" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter("instruction")}
+              className="gap-2"
+            >
+              <BookOpen className="h-4 w-4" />
+              {"Инструкции"} ({allContent.filter((c) => c.type === "instruction").length})
+            </Button>
+            <Button
+              variant={filter === "article" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter("article")}
+              className="gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              {"Статьи"} ({allContent.filter((c) => c.type === "article").length})
+            </Button>
+          </div>
 
-              {selectedVideo && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Video Player - only show if there's selected video content */}
+            {selectedContent?.type === "video" && (
+              <div className="lg:col-span-2">
+                <Card className="overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="aspect-video bg-black">
+                      {selectedContent.videoUrl && (
+                        <iframe
+                          className="w-full h-full"
+                          src={selectedContent.videoUrl}
+                          title={selectedContent.title}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="mt-4">
                   <CardHeader>
-                    <CardTitle className="text-2xl">{selectedVideo.title}</CardTitle>
-                    <CardDescription className="text-base">{selectedVideo.description}</CardDescription>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary" className="gap-1">
+                        {getContentIcon(selectedContent.type)}
+                        {getContentTypeLabel(selectedContent.type)}
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-2xl">{selectedContent.title}</CardTitle>
+                    <CardDescription className="text-base">{selectedContent.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{selectedVideo.duration}</span>
-                      </div>
+                      {selectedContent.duration && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>{selectedContent.duration}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <Eye className="h-4 w-4" />
                         <span>
-                          {selectedVideo.views} {"просмотров"}
+                          {selectedContent.views} {"просмотров"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(selectedVideo.uploadDate).toLocaleDateString("ru-RU")}</span>
+                        <span>{new Date(selectedContent.uploadDate).toLocaleDateString("ru-RU")}</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Video List */}
-            <div className="lg:col-span-1">
+            {/* Content List */}
+            <div className={selectedContent?.type === "video" ? "lg:col-span-1" : "lg:col-span-3"}>
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    {"Все видео"} ({videos.length})
+                    {filter === "all" ? "Все материалы" : getContentTypeLabel(filter)} ({filteredContent.length})
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-                  {videos.map((video) => (
+                <CardContent
+                  className={`grid gap-3 max-h-[600px] overflow-y-auto ${
+                    selectedContent?.type === "video" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                  }`}
+                >
+                  {filteredContent.map((item) => (
                     <button
-                      key={video.id}
-                      onClick={() => setSelectedVideo(video)}
-                      className={`w-full text-left p-3 rounded-lg transition-all duration-200 ${
-                        selectedVideo?.id === video.id
+                      key={item.id}
+                      onClick={() => handleViewContent(item)}
+                      className={`text-left p-3 rounded-lg transition-all duration-200 ${
+                        selectedContent?.id === item.id && item.type === "video"
                           ? "bg-primary/10 border border-primary/50"
-                          : "bg-muted/50 hover:bg-muted border border-transparent"
+                          : "bg-muted/50 hover:bg-muted border border-transparent hover:border-primary/30"
                       }`}
                     >
+                      <div className="flex items-start gap-2 mb-2">
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          {getContentIcon(item.type)}
+                          {getContentTypeLabel(item.type)}
+                        </Badge>
+                      </div>
                       <h3
                         className={`font-semibold mb-1 text-sm leading-snug ${
-                          selectedVideo?.id === video.id ? "text-primary" : "text-foreground"
+                          selectedContent?.id === item.id && item.type === "video" ? "text-primary" : "text-foreground"
                         }`}
                       >
-                        {video.title}
+                        {item.title}
                       </h3>
+                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.description}</p>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{video.duration}</span>
-                        </div>
+                        {item.duration && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{item.duration}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-1">
                           <Eye className="h-3 w-3" />
-                          <span>{video.views}</span>
+                          <span>{item.views}</span>
                         </div>
                       </div>
                     </button>

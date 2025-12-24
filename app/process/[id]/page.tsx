@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api-client"
+import type { Content } from "@/lib/data"
 import { ArrowRight, Calendar, ChevronRight, Clock, User, PlayCircle, FileText, Video, BookOpen, Eye, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
@@ -153,7 +154,7 @@ export default function ProcessPage() {
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-muted-foreground">{"Отделы:"}</span>
                 <div className="flex flex-wrap gap-2">
-                  {process.departments.map((dept) => (
+                  {process.departments.map((dept: string) => (
                     <Badge key={dept} variant="secondary" className="bg-primary/10 text-primary border-primary/20">
                       {dept}
                     </Badge>
@@ -314,7 +315,7 @@ export default function ProcessPage() {
               <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-border" />
 
               <div className="space-y-6">
-                {process.steps.map((step, index) => (
+                {process.steps.map((step: any, index: number) => (
                   <Card
                     key={step.id}
                     className="relative hover:shadow-md transition-all duration-300 border-l-4 border-l-accent ml-6"
@@ -331,7 +332,7 @@ export default function ProcessPage() {
                           <CardDescription className="text-base leading-relaxed">{step.description}</CardDescription>
                         </div>
                         {index < process.steps.length - 1 && (
-                          <ArrowRight className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                          <ArrowRight className="h-5 w-5 text-muted-foreground mt-1 shrink-0" />
                         )}
                       </div>
                     </CardHeader>
