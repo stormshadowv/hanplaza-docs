@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-
+import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
 import { Header } from "@/components/header"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { categories, businessProcesses } from "@/lib/data"
+import { apiClient } from "@/lib/api-client"
 import { Briefcase, Headphones, Package, Palette, ShoppingCart, Truck, Video, GitBranch } from "lucide-react"
 import Link from "next/link"
 
@@ -19,6 +19,41 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 }
 
 export default function DashboardPage() {
+  const [categories, setCategories] = useState<any[]>([])
+  const [processes, setProcesses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriesData, processesData] = await Promise.all([
+          apiClient.getCategories(),
+          apiClient.getProcesses(),
+        ])
+        setCategories(categoriesData.categories)
+        setProcesses(processesData.processes)
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-background">
+          <Header />
+          <main className="container py-8 px-4">
+            <p className="text-center text-muted-foreground">Загрузка...</p>
+          </main>
+        </div>
+      </AuthGuard>
+    )
+  }
+
   return (
     <AuthGuard>
       <div className="min-h-screen bg-background">
@@ -36,7 +71,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {businessProcesses.map((process) => (
+              {processes.map((process) => (
                 <Link key={process.id} href={`/process/${process.id}`}>
                   <Card className="hover:shadow-lg transition-all duration-300 hover:border-accent/50 h-full group cursor-pointer">
                     <CardHeader>
@@ -53,7 +88,7 @@ export default function DashboardPage() {
                       </CardTitle>
                       <CardDescription className="text-sm line-clamp-2">{process.description}</CardDescription>
                       <div className="pt-2 flex flex-wrap gap-1">
-                        {process.departments.slice(0, 2).map((dept) => (
+                        {process.departments.slice(0, 2).map((dept: any) => (
                           <span
                             key={dept}
                             className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium"
@@ -89,7 +124,7 @@ export default function DashboardPage() {
               {categories.map((category) => {
                 const Icon = iconMap[category.icon] || Video
                 return (
-                  <Link key={category.id} href={`/category/${category.id}`}>
+                  <Link key={category.id} href={`/category/${category.slug}`}>
                     <Card className="hover:shadow-lg transition-all duration-300 hover:border-primary/50 h-full group cursor-pointer">
                       <CardHeader>
                         <div className="flex items-start justify-between">
@@ -97,7 +132,7 @@ export default function DashboardPage() {
                             <Icon className="h-6 w-6 text-primary" />
                           </div>
                           <div className="text-sm font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                            {category.contentCount} {"материалов"}
+                            {category.videoCount || 0} {"материалов"}
                           </div>
                         </div>
                         <CardTitle className="text-xl group-hover:text-primary transition-colors">

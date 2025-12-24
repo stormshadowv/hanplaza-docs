@@ -136,6 +136,77 @@ class ApiClient {
       body: JSON.stringify({ action: 'increment_views' }),
     })
   }
+
+  // Content
+  async getContent(categoryId?: string, type?: string): Promise<{ content: any[] }> {
+    let query = ''
+    const params = []
+    if (categoryId) params.push(`categoryId=${categoryId}`)
+    if (type) params.push(`type=${type}`)
+    if (params.length > 0) query = `?${params.join('&')}`
+    
+    return this.request<{ content: any[] }>(`/content${query}`)
+  }
+
+  async getContentById(id: string): Promise<{ content: any }> {
+    return this.request<{ content: any }>(`/content/${id}`)
+  }
+
+  async incrementContentViews(id: string): Promise<void> {
+    await this.request(`/content/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action: 'increment_views' }),
+    })
+  }
+
+  async createContent(data: any): Promise<{ content: any }> {
+    return this.request<{ content: any }>('/content', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateContent(id: string, data: any): Promise<{ content: any }> {
+    return this.request<{ content: any }>(`/content/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteContent(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/content/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Business Processes
+  async getProcesses(): Promise<{ processes: any[] }> {
+    return this.request<{ processes: any[] }>('/processes')
+  }
+
+  async getProcessById(id: string): Promise<{ process: any }> {
+    return this.request<{ process: any }>(`/processes/${id}`)
+  }
+
+  async createProcess(data: any): Promise<{ process: any }> {
+    return this.request<{ process: any }>('/processes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateProcess(id: string, data: any): Promise<{ process: any }> {
+    return this.request<{ process: any }>(`/processes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteProcess(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/processes/${id}`, {
+      method: 'DELETE',
+    })
+  }
 }
 
 export const apiClient = new ApiClient()

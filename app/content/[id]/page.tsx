@@ -5,17 +5,54 @@ import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { getContentById, getCategoryById } from "@/lib/data"
+import { apiClient } from "@/lib/api-client"
 import { ArrowLeft, Eye, Calendar, FileText, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 
 export default function ContentPage() {
   const params = useParams()
   const contentId = params.id as string
-  const content = getContentById(contentId)
-  const category = content ? getCategoryById(content.categoryId) : null
+  const [content, setContent] = useState<any>(null)
+  const [category, setCategory] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { content: contentData } = await apiClient.getContentById(contentId)
+        setContent(contentData)
+
+        // Increment views
+        await apiClient.incrementContentViews(contentId)
+
+        // Fetch category
+        const { categories } = await apiClient.getCategories()
+        const foundCategory = categories.find((c: any) => c.id === contentData.categoryId)
+        setCategory(foundCategory || null)
+      } catch (error) {
+        console.error("Error fetching content:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [contentId])
+
+  if (loading) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-background">
+          <Header />
+          <main className="container py-8 px-4">
+            <p className="text-center text-muted-foreground">Загрузка...</p>
+          </main>
+        </div>
+      </AuthGuard>
+    )
+  }
 
   if (!content || !category) {
     return (
@@ -58,7 +95,7 @@ export default function ContentPage() {
         <Header />
         <main className="container py-8 px-4 max-w-4xl">
           <div className="mb-6">
-            <Link href={`/category/${content.categoryId}`}>
+            <Link href={`/category/${category.slug}`}>
               <Button variant="ghost" className="mb-4 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {"Назад к"} {category.name}
@@ -86,7 +123,7 @@ export default function ContentPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  <span>{new Date(content.uploadDate).toLocaleDateString("ru-RU")}</span>
+                  <span>{new Date(content.createdAt).toLocaleDateString("ru-RU")}</span>
                 </div>
               </div>
             </CardHeader>
