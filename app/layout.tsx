@@ -7,9 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'Han Plaza - Обучающая платформа',
+  description: 'Полнофункциональная обучающая платформа с системой авторизации, управлением категориями и видео для сотрудников Han Plaza',
   icons: {
     icon: [
       {
@@ -35,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="ru">
       <body className={`font-sans antialiased`}>
         {children}
         <Analytics />
