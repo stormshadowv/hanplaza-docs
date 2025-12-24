@@ -2,19 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { signToken } from '@/lib/jwt'
-
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://hanplaza-docs.ru',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-}
+import { getCorsHeaders } from '@/lib/cors'
 
 export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json({}, { headers: corsHeaders })
+  const origin = request.headers.get('origin')
+  return NextResponse.json({}, { headers: getCorsHeaders(origin) })
 }
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const corsHeaders = getCorsHeaders(origin)
+  
   try {
     const { email, password, name, role } = await request.json()
 

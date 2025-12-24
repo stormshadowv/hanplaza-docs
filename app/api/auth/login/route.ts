@@ -2,15 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { signToken } from '@/lib/jwt'
+import { getCorsHeaders } from '@/lib/cors'
+
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  return NextResponse.json({}, { headers: getCorsHeaders(origin) })
+}
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const corsHeaders = getCorsHeaders(origin)
+  
   try {
     const { email, password } = await request.json()
 
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email и пароль обязательны' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -22,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: 'Неверный email или пароль' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -32,7 +41,7 @@ export async function POST(request: NextRequest) {
     if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Неверный email или пароль' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -51,12 +60,12 @@ export async function POST(request: NextRequest) {
         name: user.name,
         role: user.role,
       },
-    })
+    }, { headers: corsHeaders })
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
       { error: 'Ошибка сервера' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
