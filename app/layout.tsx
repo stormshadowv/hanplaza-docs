@@ -12,19 +12,32 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
+        url: '/images/logo.png',
+        type: 'image/png',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: '/images/logo.png',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'ru_RU',
+    siteName: 'Han Plaza',
+    title: 'Han Plaza - Обучающая платформа',
+    description: 'Полнофункциональная обучающая платформа с системой авторизации, управлением категориями и видео для сотрудников Han Plaza',
+    images: [
+      {
+        url: '/images/logo.png',
+        width: 1200,
+        height: 1200,
+        alt: 'Han Plaza - Мебельная сеть',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Han Plaza - Обучающая платформа',
+    description: 'Полнофункциональная обучающая платформа с системой авторизации, управлением категориями и видео для сотрудников Han Plaza',
+    images: ['/images/logo.png'],
   },
 }
 
