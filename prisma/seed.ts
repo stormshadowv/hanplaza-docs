@@ -426,24 +426,76 @@ async function main() {
 
   console.log("✅ Business processes created")
 
-  // Create admin user
-  const hashedPassword = await bcrypt.hash("admin123", 10)
-  await prisma.user.upsert({
-    where: { email: "admin@hanplaza.com" },
-    update: {},
-    create: {
-      email: "admin@hanplaza.com",
-      password: hashedPassword,
+  // Create users
+  const users = [
+    {
+      email: "admin@hanplaza.ru",
+      password: "password123",
       name: "Администратор",
       role: "admin",
     },
-  })
+    {
+      email: "manager@hanplaza.ru",
+      password: "password123",
+      name: "Иван Менеджеров",
+      role: "manager",
+    },
+    {
+      email: "buyer@hanplaza.ru",
+      password: "password123",
+      name: "Петр Закупщиков",
+      role: "buyer",
+    },
+    {
+      email: "warehouse@hanplaza.ru",
+      password: "password123",
+      name: "Сергей Складской",
+      role: "warehouse",
+    },
+    {
+      email: "designer@hanplaza.ru",
+      password: "password123",
+      name: "Анна Дизайнерова",
+      role: "designer",
+    },
+    {
+      email: "logistics@hanplaza.ru",
+      password: "password123",
+      name: "Михаил Логистов",
+      role: "logistics",
+    },
+    {
+      email: "customer-service@hanplaza.ru",
+      password: "password123",
+      name: "Елена Сервисова",
+      role: "customer-service",
+    },
+  ]
 
-  console.log("✅ Admin user created")
+  for (const userData of users) {
+    const hashedPassword = await bcrypt.hash(userData.password, 10)
+    await prisma.user.upsert({
+      where: { email: userData.email },
+      update: {},
+      create: {
+        email: userData.email,
+        password: hashedPassword,
+        name: userData.name,
+        role: userData.role,
+      },
+    })
+  }
+
+  console.log("✅ Users created")
   console.log("✅ Seed completed successfully!")
-  console.log("\n📝 Login credentials:")
-  console.log("   Email: admin@hanplaza.com")
-  console.log("   Password: admin123")
+  console.log("\n📝 Login credentials (all with password: password123):")
+  console.log("   Admin: admin@hanplaza.ru")
+  console.log("   Manager: manager@hanplaza.ru")
+  console.log("   Buyer: buyer@hanplaza.ru")
+  console.log("   Warehouse: warehouse@hanplaza.ru")
+  console.log("   Designer: designer@hanplaza.ru")
+  console.log("   Logistics: logistics@hanplaza.ru")
+  console.log("   Customer Service: customer-service@hanplaza.ru")
 }
 
 main()

@@ -58,6 +58,23 @@ export async function PATCH(
 ) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
+  // Проверка аутентификации
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user) {
+    return NextResponse.json(
+      { error: "Неверный токен" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+  
   try {
     const params = await context.params
     const body = await request.json()
@@ -71,6 +88,14 @@ export async function PATCH(
       return NextResponse.json(
         { content },
         { headers: corsHeaders }
+      )
+    }
+
+    // Обновление контента - только для админов
+    if (user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Доступ запрещен. Требуются права администратора" },
+        { status: 403, headers: corsHeaders }
       )
     }
 
@@ -97,6 +122,23 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
+  // Проверка аутентификации и прав администратора
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user || user.role !== "admin") {
+    return NextResponse.json(
+      { error: "Доступ запрещен. Требуются права администратора" },
+      { status: 403, headers: corsHeaders }
+    )
+  }
   
   try {
     const params = await context.params
