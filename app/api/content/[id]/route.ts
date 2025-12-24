@@ -5,7 +5,7 @@ import { verifyToken } from "@/lib/jwt"
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
@@ -27,6 +27,7 @@ export async function GET(
   }
 
   try {
+    const params = await context.params
     const content = await prisma.content.findUnique({
       where: { id: params.id },
     })
@@ -53,11 +54,12 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
   try {
+    const params = await context.params
     const body = await request.json()
     
     if (body.action === "increment_views") {
@@ -92,11 +94,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
   try {
+    const params = await context.params
     await prisma.content.delete({
       where: { id: params.id },
     })

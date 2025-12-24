@@ -5,7 +5,7 @@ import { verifyToken } from "@/lib/jwt"
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
@@ -27,6 +27,9 @@ export async function GET(
   }
 
   try {
+    const params = await context.params
+    console.log("Process ID requested:", params.id)
+    
     const process = await prisma.businessProcess.findUnique({
       where: { id: params.id },
       include: {
@@ -82,7 +85,7 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
@@ -104,6 +107,7 @@ export async function PUT(
   }
 
   try {
+    const params = await context.params
     const body = await request.json()
     const { name, description, departments, steps, allowedRoles } = body
 
@@ -151,7 +155,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const corsHeaders = getCorsHeaders(request.headers.get("origin"))
   
@@ -173,6 +177,7 @@ export async function DELETE(
   }
 
   try {
+    const params = await context.params
     await prisma.businessProcess.delete({
       where: { id: params.id },
     })

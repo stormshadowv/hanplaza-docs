@@ -41,7 +41,7 @@ export const GET = requireAuth(async (request: NextRequest, context: any) => {
     })
 
     const formattedCategories = filteredCategories.map((category: any) => ({
-      id: category.slug,
+      id: category.id,
       slug: category.slug,
       name: category.name,
       description: category.description,

@@ -28,18 +28,23 @@ export default function CategoryPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log("Loading category with slug:", categorySlug)
         // Сначала загружаем категорию чтобы получить её ID
         const categoriesData = await apiClient.getCategories()
+        console.log("All categories:", categoriesData.categories)
         const foundCategory = categoriesData.categories.find((c: any) => c.slug === categorySlug)
         
         if (!foundCategory) {
+          console.log("Category not found for slug:", categorySlug)
           setLoading(false)
           return
         }
         
+        console.log("Found category:", foundCategory)
         setCategory(foundCategory)
 
         // Теперь загружаем контент по ID категории
+        console.log("Fetching content for categoryId:", foundCategory.id)
         const contentResponse = await fetch(`/api/content?categoryId=${foundCategory.id}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("hanplaza_token")}`,
@@ -47,6 +52,7 @@ export default function CategoryPage() {
         })
         
         const contentData = await contentResponse.json()
+        console.log("Content data received:", contentData)
         
         if (contentData.content && contentData.content.length > 0) {
           setAllContent(contentData.content)
@@ -54,11 +60,13 @@ export default function CategoryPage() {
           const firstVideo = contentData.content.find((c: Content) => c.type === "video")
           setSelectedContent(firstVideo || contentData.content[0] || null)
         } else {
+          console.log("No content found for category")
           setAllContent([])
           setSelectedContent(null)
         }
       } catch (error) {
         console.error('Failed to load data:', error)
+        console.error('Category slug:', categorySlug)
       } finally {
         setLoading(false)
       }

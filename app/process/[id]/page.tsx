@@ -28,8 +28,10 @@ export default function ProcessPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log("Fetching process with ID:", processId)
         // Fetch process
         const { process: processData } = await apiClient.getProcessById(processId)
+        console.log("Process data received:", processData)
         setProcess(processData)
 
         // Collect all unique content IDs
@@ -52,6 +54,7 @@ export default function ProcessPage() {
         }
       } catch (error) {
         console.error("Error fetching process:", error)
+        console.error("Process ID that failed:", processId)
       } finally {
         setLoading(false)
       }
