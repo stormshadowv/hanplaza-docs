@@ -308,6 +308,7 @@ async function main() {
       name: "Процесс продажи",
       description: "Полный цикл работы с клиентом от первого контакта до закрытия сделки",
       departments: JSON.stringify(["Отдел продаж", "Логистика", "Бухгалтерия"]),
+      allowedRoles: "manager,admin", // Доступно менеджерам и админам
       steps: [
         {
           stepNumber: 1,
@@ -370,6 +371,7 @@ async function main() {
       name: "Процесс закупки товара",
       description: "Этапы работы с поставщиками от поиска до получения товара на склад",
       departments: JSON.stringify(["Отдел закупок", "Склад", "Финансовый отдел"]),
+      allowedRoles: "buyer,admin", // Доступно закупщикам и админам
       steps: [
         {
           stepNumber: 1,
@@ -432,6 +434,7 @@ async function main() {
       name: "Обработка рекламации",
       description: "Процедура работы с жалобами и претензиями клиентов",
       departments: JSON.stringify(["Клиентский сервис", "Отдел продаж", "Логистика"]),
+      allowedRoles: "customer-service,manager,admin", // Доступно клиентскому сервису, менеджерам и админам
       steps: [
         {
           stepNumber: 1,

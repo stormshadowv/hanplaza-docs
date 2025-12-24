@@ -62,13 +62,14 @@ model Content {
 }
 
 model BusinessProcess {
-  id          String        @id @default(uuid())
-  name        String
-  description String
-  departments String        // JSON array: ["Отдел продаж", "Логистика"]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  steps       ProcessStep[]
+  id           String        @id @default(uuid())
+  name         String
+  description  String
+  departments  String        // JSON array: ["Отдел продаж", "Логистика"]
+  allowedRoles String        @default("") // Роли через запятую: "manager,admin" или пусто для всех
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  steps        ProcessStep[]
 }
 
 model ProcessStep {

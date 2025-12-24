@@ -1,8 +1,28 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { corsHeaders } from "@/lib/cors"
+import { getCorsHeaders } from "@/lib/cors"
+import { verifyToken } from "@/lib/jwt"
 
-export async function GET() {
+export async function GET(request: Request) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
+  // Проверка аутентификации
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user) {
+    return NextResponse.json(
+      { error: "Неверный токен" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
   try {
     const processes = await prisma.businessProcess.findMany({
       include: {
@@ -13,8 +33,23 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     })
 
+    // Фильтрация по ролям
+    const filteredProcesses = processes.filter((process) => {
+      // Админы видят всё
+      if (user.role === "admin") return true
+      
+      // Если allowedRoles пустой или "all", доступно всем
+      if (!process.allowedRoles || process.allowedRoles === "" || process.allowedRoles === "all") {
+        return true
+      }
+      
+      // Проверяем, есть ли роль пользователя в списке разрешенных
+      const allowedRolesArray = process.allowedRoles.split(",").map((r) => r.trim())
+      return allowedRolesArray.includes(user.role)
+    })
+
     // Parse JSON fields
-    const processesWithParsedData = processes.map((process) => ({
+    const processesWithParsedData = filteredProcesses.map((process) => ({
       ...process,
       departments: JSON.parse(process.departments),
       steps: process.steps.map((step) => ({
@@ -38,15 +73,35 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
+  // Проверка аутентификации и прав администратора
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user || user.role !== "admin") {
+    return NextResponse.json(
+      { error: "Доступ запрещен. Требуются права администратора" },
+      { status: 403, headers: corsHeaders }
+    )
+  }
+
   try {
     const body = await request.json()
-    const { name, description, departments, steps } = body
+    const { name, description, departments, steps, allowedRoles } = body
 
     const process = await prisma.businessProcess.create({
       data: {
         name,
         description,
         departments: JSON.stringify(departments),
+        allowedRoles: allowedRoles || "",
         steps: {
           create: steps.map((step: any, index: number) => ({
             stepNumber: index + 1,

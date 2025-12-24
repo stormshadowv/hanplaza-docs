@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { corsHeaders } from "@/lib/cors"
+import { getCorsHeaders } from "@/lib/cors"
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
   try {
     const content = await prisma.content.findUnique({
       where: { id: params.id },
@@ -35,6 +37,8 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
   try {
     const body = await request.json()
     
@@ -72,6 +76,8 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
   try {
     await prisma.content.delete({
       where: { id: params.id },

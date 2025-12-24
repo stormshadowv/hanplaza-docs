@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { apiClient, Category } from "@/lib/api-client"
-import { AlertCircle, CheckCircle2, Plus, Video as VideoIcon, Folder, Trash2 } from "lucide-react"
+import { AlertCircle, CheckCircle2, Plus, Video as VideoIcon, Folder, Trash2, GitBranch } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   AlertDialog,
@@ -56,6 +56,14 @@ export default function AdminPage() {
     description: "",
     icon: "folder",
     slug: "",
+    allowedRoles: "admin", // По умолчанию только админы
+  })
+
+  // Форма для бизнес-процесса
+  const [processForm, setProcessForm] = useState({
+    name: "",
+    description: "",
+    departments: "",
     allowedRoles: "admin", // По умолчанию только админы
   })
 
@@ -200,6 +208,56 @@ export default function AdminPage() {
     }
   }
 
+  const handleProcessSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+    setSuccess("")
+
+    try {
+      const token = localStorage.getItem("hanplaza_token")
+      const departmentsArray = processForm.departments
+        .split(",")
+        .map((d) => d.trim())
+        .filter((d) => d)
+
+      const response = await fetch("/api/processes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: processForm.name,
+          description: processForm.description,
+          departments: departmentsArray,
+          allowedRoles: processForm.allowedRoles,
+          steps: [], // Пустой массив шагов, можно добавить позже
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Ошибка создания бизнес-процесса")
+      }
+
+      setSuccess("Бизнес-процесс успешно добавлен!")
+      setProcessForm({
+        name: "",
+        description: "",
+        departments: "",
+        allowedRoles: "admin",
+      })
+
+      setTimeout(() => setSuccess(""), 3000)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!isAdmin) {
     return null
   }
@@ -231,7 +289,7 @@ export default function AdminPage() {
           )}
 
           <Tabs defaultValue="video" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsList className="grid w-full grid-cols-3 max-w-2xl">
               <TabsTrigger value="video">
                 <VideoIcon className="h-4 w-4 mr-2" />
                 Добавить видео
@@ -239,6 +297,10 @@ export default function AdminPage() {
               <TabsTrigger value="category">
                 <Folder className="h-4 w-4 mr-2" />
                 Добавить категорию
+              </TabsTrigger>
+              <TabsTrigger value="process">
+                <GitBranch className="h-4 w-4 mr-2" />
+                Бизнес-процесс
               </TabsTrigger>
             </TabsList>
 
@@ -441,6 +503,87 @@ export default function AdminPage() {
                     <Button type="submit" className="w-full" disabled={loading}>
                       <Plus className="h-4 w-4 mr-2" />
                       {loading ? "Добавление..." : "Добавить категорию"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="process">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Новый бизнес-процесс</CardTitle>
+                  <CardDescription>Создайте новый бизнес-процесс с контролем доступа</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleProcessSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="proc-name">Название процесса *</Label>
+                      <Input
+                        id="proc-name"
+                        value={processForm.name}
+                        onChange={(e) => setProcessForm({ ...processForm, name: e.target.value })}
+                        placeholder="Процесс обработки заказа"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="proc-description">Описание *</Label>
+                      <Textarea
+                        id="proc-description"
+                        value={processForm.description}
+                        onChange={(e) => setProcessForm({ ...processForm, description: e.target.value })}
+                        placeholder="Подробное описание бизнес-процесса..."
+                        rows={3}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="proc-departments">Отделы (через запятую) *</Label>
+                      <Input
+                        id="proc-departments"
+                        value={processForm.departments}
+                        onChange={(e) => setProcessForm({ ...processForm, departments: e.target.value })}
+                        placeholder="Отдел продаж, Логистика, Склад"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Перечислите отделы, участвующие в процессе
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="proc-roles">Доступные роли *</Label>
+                      <Select
+                        value={processForm.allowedRoles}
+                        onValueChange={(value) => setProcessForm({ ...processForm, allowedRoles: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Только админы</SelectItem>
+                          <SelectItem value="manager,admin">Менеджеры + Админы</SelectItem>
+                          <SelectItem value="buyer,admin">Закупщики + Админы</SelectItem>
+                          <SelectItem value="warehouse,admin">Складские + Админы</SelectItem>
+                          <SelectItem value="designer,admin">Дизайнеры + Админы</SelectItem>
+                          <SelectItem value="logistics,admin">Логистика + Админы</SelectItem>
+                          <SelectItem value="customer-service,admin">
+                            Обслуживание + Админы
+                          </SelectItem>
+                          <SelectItem value="all">Все пользователи</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Какие роли могут видеть этот бизнес-процесс
+                      </p>
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      {loading ? "Добавление..." : "Добавить бизнес-процесс"}
                     </Button>
                   </form>
                 </CardContent>

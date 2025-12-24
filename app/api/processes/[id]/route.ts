@@ -1,11 +1,31 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { corsHeaders } from "@/lib/cors"
+import { getCorsHeaders } from "@/lib/cors"
+import { verifyToken } from "@/lib/jwt"
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
+  // Проверка аутентификации
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user) {
+    return NextResponse.json(
+      { error: "Неверный токен" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
   try {
     const process = await prisma.businessProcess.findUnique({
       where: { id: params.id },
@@ -21,6 +41,19 @@ export async function GET(
         { error: "Процесс не найден" },
         { status: 404, headers: corsHeaders }
       )
+    }
+
+    // Проверка прав доступа
+    if (user.role !== "admin") {
+      if (process.allowedRoles && process.allowedRoles !== "" && process.allowedRoles !== "all") {
+        const allowedRolesArray = process.allowedRoles.split(",").map((r) => r.trim())
+        if (!allowedRolesArray.includes(user.role)) {
+          return NextResponse.json(
+            { error: "Доступ запрещен" },
+            { status: 403, headers: corsHeaders }
+          )
+        }
+      }
     }
 
     // Parse JSON fields
@@ -51,9 +84,28 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
+  // Проверка аутентификации и прав администратора
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user || user.role !== "admin") {
+    return NextResponse.json(
+      { error: "Доступ запрещен. Требуются права администратора" },
+      { status: 403, headers: corsHeaders }
+    )
+  }
+
   try {
     const body = await request.json()
-    const { name, description, departments, steps } = body
+    const { name, description, departments, steps, allowedRoles } = body
 
     // Delete old steps
     await prisma.processStep.deleteMany({
@@ -67,6 +119,7 @@ export async function PUT(
         name,
         description,
         departments: JSON.stringify(departments),
+        allowedRoles: allowedRoles !== undefined ? allowedRoles : "",
         steps: {
           create: steps.map((step: any, index: number) => ({
             stepNumber: index + 1,
@@ -100,6 +153,25 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
+  // Проверка аутентификации и прав администратора
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) {
+    return NextResponse.json(
+      { error: "Требуется авторизация" },
+      { status: 401, headers: corsHeaders }
+    )
+  }
+
+  const user = verifyToken(token)
+  if (!user || user.role !== "admin") {
+    return NextResponse.json(
+      { error: "Доступ запрещен. Требуются права администратора" },
+      { status: 403, headers: corsHeaders }
+    )
+  }
+
   try {
     await prisma.businessProcess.delete({
       where: { id: params.id },

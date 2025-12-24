@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { corsHeaders } from "@/lib/cors"
+import { getCorsHeaders } from "@/lib/cors"
 
 export async function GET(request: Request) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
   try {
     const { searchParams } = new URL(request.url)
     const categoryId = searchParams.get("categoryId")
@@ -31,6 +33,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"))
+  
   try {
     const body = await request.json()
     const { title, description, categoryId, type, duration, thumbnail, videoUrl, content } = body
