@@ -96,10 +96,56 @@ npx prisma db seed
 
 ## Если что-то пошло не так
 
+### Ошибка "Environment Variable references Secret which does not exist"
+**Проблема:** Vercel пытается использовать синтаксис секретов вместо прямого значения.
+
+**Решение:**
+1. Зайдите в **Vercel Dashboard** → ваш проект → **Settings** → **Environment Variables**
+2. Найдите переменную `DATABASE_URL`
+3. Если в поле стоит что-то вроде `@database_url` - это неправильно!
+4. **Удалите** эту переменную (нажмите на три точки → Delete)
+5. **Создайте заново**: 
+   - Key: `DATABASE_URL`
+   - Value: вставьте полный connection string от Neon (например: `postgresql://user:password@host.neon.tech/dbname`)
+   - Environments: выберите все (Production, Preview, Development)
+6. **Redeploy**: Settings → Deployments → последний деплой → три точки → Redeploy
+
 ### Ошибка "Invalid DATABASE_URL"
 - Проверьте что скопировали полный URL с паролем
 - URL должен начинаться с `postgresql://`
 - В Vercel проверьте Environment Variables
+
+### "To deploy to production, push to the Repository Default branch"
+**Проблема:** Vercel ждет код в репозитории для деплоя.
+
+**Решение:**
+
+1. **Проверьте что код загружен на GitHub:**
+   ```bash
+   git status  # проверьте текущее состояние
+   git log     # убедитесь что есть коммиты
+   ```
+
+2. **Если код еще не загружен, выполните:**
+   ```bash
+   git add .
+   git commit -m "Initial commit"
+   git push -u origin main
+   ```
+
+3. **Если код уже на GitHub, но деплой не запускается:**
+   - Вариант А: Сделайте пустой коммит для триггера деплоя:
+     ```bash
+     git commit --allow-empty -m "Trigger deployment"
+     git push
+     ```
+   - Вариант Б: В Vercel Dashboard → Deployments → **Redeploy** (на последнем деплое)
+
+4. **Проверьте основную ветку:**
+   ```bash
+   git branch  # должна быть main или master
+   ```
+   - В Vercel Settings → Git → убедитесь что Production Branch совпадает с вашей основной веткой
 
 ### Домен не работает
 - Подождите 15-30 минут (DNS propagation)
