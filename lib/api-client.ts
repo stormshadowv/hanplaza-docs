@@ -21,18 +21,6 @@ export interface Category {
   videoCount: number
 }
 
-export interface Video {
-  id: string
-  title: string
-  description: string
-  categoryId: string
-  duration: string
-  thumbnail: string
-  videoUrl: string
-  uploadDate: string
-  views: number
-}
-
 class ApiClient {
   private getToken(): string | null {
     if (typeof window === 'undefined') return null
@@ -117,23 +105,6 @@ class ApiClient {
   async deleteCategory(slug: string): Promise<{ success: boolean; message: string }> {
     return this.request<{ success: boolean; message: string }>(`/categories/${slug}`, {
       method: 'DELETE',
-    })
-  }
-
-  // Videos
-  async getVideos(categorySlug?: string): Promise<{ videos: Video[] }> {
-    const query = categorySlug ? `?category=${categorySlug}` : ''
-    return this.request<{ videos: Video[] }>(`/videos${query}`)
-  }
-
-  async getVideo(id: string): Promise<{ video: Video }> {
-    return this.request<{ video: Video }>(`/videos/${id}`)
-  }
-
-  async incrementVideoViews(id: string): Promise<void> {
-    await this.request(`/videos/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ action: 'increment_views' }),
     })
   }
 

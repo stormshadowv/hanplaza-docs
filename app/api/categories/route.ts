@@ -8,18 +8,23 @@ export const GET = requireAuth(async (request: NextRequest, context: any) => {
     const userRole = context.user.role
     
     const categories = await prisma.category.findMany({
-      include: {
-        _count: {
-          select: { videos: true },
-        },
-      },
       orderBy: {
         name: 'asc',
       },
     })
 
+    // Получаем количество контента для каждой категории
+    const categoriesWithCounts = await Promise.all(
+      categories.map(async (category) => {
+        const contentCount = await prisma.content.count({
+          where: { categoryId: category.id },
+        })
+        return { ...category, contentCount }
+      })
+    )
+
     // Фильтруем категории по роли пользователя
-    const filteredCategories = categories.filter((category: any) => {
+    const filteredCategories = categoriesWithCounts.filter((category: any) => {
       // Админы видят все
       if (userRole === 'admin') {
         return true
@@ -41,7 +46,7 @@ export const GET = requireAuth(async (request: NextRequest, context: any) => {
       name: category.name,
       description: category.description,
       icon: category.icon,
-      videoCount: category._count.videos,
+      videoCount: category.contentCount,
     }))
 
     return NextResponse.json({ categories: formattedCategories })

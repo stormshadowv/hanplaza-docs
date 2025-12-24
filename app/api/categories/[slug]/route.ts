@@ -17,11 +17,6 @@ export const DELETE = requireAuth(async (request: NextRequest, context: any) => 
     // Проверяем существование категории
     const category = await prisma.category.findUnique({
       where: { slug },
-      include: {
-        _count: {
-          select: { videos: true },
-        },
-      },
     })
 
     if (!category) {
@@ -31,14 +26,24 @@ export const DELETE = requireAuth(async (request: NextRequest, context: any) => 
       )
     }
 
-    // Удаляем категорию (видео удалятся автоматически благодаря onDelete: Cascade)
+    // Подсчитываем контент в категории
+    const contentCount = await prisma.content.count({
+      where: { categoryId: category.id },
+    })
+
+    // Удаляем весь контент в категории
+    await prisma.content.deleteMany({
+      where: { categoryId: category.id },
+    })
+
+    // Удаляем категорию
     await prisma.category.delete({
       where: { slug },
     })
 
     return NextResponse.json({ 
       success: true,
-      message: `Категория "${category.name}" и ${category._count.videos} видео успешно удалены`
+      message: `Категория "${category.name}" и ${contentCount} материалов успешно удалены`
     })
   } catch (error) {
     console.error('Delete category error:', error)

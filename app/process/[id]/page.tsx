@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api-client"
 import type { Content } from "@/lib/data"
-import { ArrowRight, Calendar, ChevronRight, Clock, User, PlayCircle, FileText, Video, BookOpen, Eye, ArrowLeft } from "lucide-react"
+import { ArrowRight, Calendar, ChevronRight, Clock, User, PlayCircle, Video, BookOpen, Eye, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
@@ -95,8 +95,6 @@ export default function ProcessPage() {
         return <Video className="h-3 w-3" />
       case "instruction":
         return <BookOpen className="h-3 w-3" />
-      case "article":
-        return <FileText className="h-3 w-3" />
       default:
         return null
     }
@@ -108,8 +106,6 @@ export default function ProcessPage() {
         return "Видео"
       case "instruction":
         return "Инструкция"
-      case "article":
-        return "Статья"
       default:
         return ""
     }

@@ -7,12 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { apiClient } from "@/lib/api-client"
 import type { Content } from "@/lib/data"
-import { ArrowLeft, Clock, Eye, Calendar, Video, BookOpen, FileText } from "lucide-react"
+import { ArrowLeft, Clock, Eye, Calendar, Video, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
-type ContentFilter = "all" | "video" | "instruction" | "article"
+type ContentFilter = "all" | "video" | "instruction"
 
 export default function CategoryPage() {
   const params = useParams()
@@ -77,8 +77,6 @@ export default function CategoryPage() {
         return <Video className="h-3 w-3" />
       case "instruction":
         return <BookOpen className="h-3 w-3" />
-      case "article":
-        return <FileText className="h-3 w-3" />
       default:
         return null
     }
@@ -90,8 +88,6 @@ export default function CategoryPage() {
         return "Видео"
       case "instruction":
         return "Инструкция"
-      case "article":
-        return "Статья"
       default:
         return ""
     }
@@ -176,15 +172,6 @@ export default function CategoryPage() {
             >
               <BookOpen className="h-4 w-4" />
               {"Инструкции"} ({allContent.filter((c) => c.type === "instruction").length})
-            </Button>
-            <Button
-              variant={filter === "article" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter("article")}
-              className="gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              {"Статьи"} ({allContent.filter((c) => c.type === "article").length})
             </Button>
           </div>
 

@@ -65,67 +65,6 @@ async function main() {
 
   console.log("✅ Categories created")
 
-  // Create videos
-  const videos = [
-    {
-      title: "Основы работы с клиентами",
-      description: "Введение в работу менеджера по продажам",
-      categorySlug: "manager",
-      duration: "15:30",
-      thumbnail: "/professional-sales-training.jpg",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      views: 234,
-    },
-    {
-      title: "Техники продаж",
-      description: "Продвинутые методы убеждения клиентов",
-      categorySlug: "manager",
-      duration: "22:45",
-      thumbnail: "/sales-techniques-presentation.jpg",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      views: 189,
-    },
-    {
-      title: "Работа с поставщиками",
-      description: "Как находить и оценивать поставщиков",
-      categorySlug: "buyer",
-      duration: "18:20",
-      thumbnail: "/supplier-meeting-business.jpg",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      views: 156,
-    },
-    {
-      title: "Контроль качества товаров",
-      description: "Проверка качества при приемке",
-      categorySlug: "buyer",
-      duration: "12:10",
-      thumbnail: "/quality-control-inspection.png",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      views: 142,
-    },
-    {
-      title: "Организация склада",
-      description: "Эффективное использование складских площадей",
-      categorySlug: "warehouse",
-      duration: "20:15",
-      thumbnail: "/warehouse-organization.jpg",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      views: 198,
-    },
-  ]
-
-  for (const video of videos) {
-    const { categorySlug, ...videoData } = video
-    await prisma.video.create({
-      data: {
-        ...videoData,
-        categoryId: categoryMap[categorySlug],
-      },
-    })
-  }
-
-  console.log("✅ Videos created")
-
   // Create content
   const content = [
     {
@@ -147,43 +86,6 @@ async function main() {
       thumbnail: "/sales-techniques-presentation.jpg",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       views: 189,
-    },
-    {
-      title: "Техники активных продаж",
-      description: "Полное руководство по современным техникам продаж",
-      categorySlug: "manager",
-      type: "article",
-      content: `# Техники активных продаж
-
-## Введение
-
-Активные продажи — это проактивный подход к работе с клиентами, при котором менеджер самостоятельно инициирует контакт и ведет клиента через весь процесс принятия решения.
-
-## Основные принципы
-
-### 1. Подготовка к продаже
-- Изучите продукт досконально
-- Определите целевую аудиторию
-- Подготовьте презентационные материалы
-
-### 2. Установление контакта
-- Первое впечатление решает многое
-- Используйте открытые вопросы
-- Активно слушайте клиента
-
-### 3. Выявление потребностей
-Задавайте правильные вопросы:
-- Что для вас важно при выборе?
-- Какие задачи вы хотите решить?
-- Какой у вас опыт работы с подобными продуктами?
-
-## Техника СПИН-продаж
-
-**С**итуационные вопросы - узнайте текущую ситуацию клиента
-**П**роблемные вопросы - выявите проблемы и сложности
-**И**звлекающие вопросы - усильте осознание проблемы
-**Н**аправляющие вопросы - покажите ценность решения`,
-      views: 342,
     },
     {
       title: "Работа в CRM системе",
@@ -317,7 +219,7 @@ async function main() {
             "Установление связи с потенциальным клиентом, выявление потребностей и интересов. Важно создать положительное первое впечатление и определить, насколько клиент соответствует целевой аудитории.",
           responsible: "Менеджер по продажам",
           duration: "30 минут",
-          relatedContentTitles: ["Основы работы с клиентами", "Техники активных продаж"],
+          relatedContentTitles: ["Основы работы с клиентами"],
         },
         {
           stepNumber: 2,
@@ -335,7 +237,7 @@ async function main() {
             "Проведение встречи или онлайн-презентации для демонстрации преимуществ продукта. Работа с возражениями, ответы на вопросы клиента, обсуждение деталей сотрудничества.",
           responsible: "Менеджер по продажам",
           duration: "1-2 часа",
-          relatedContentTitles: ["Техники продаж", "Техники активных продаж"],
+          relatedContentTitles: ["Техники продаж"],
         },
         {
           stepNumber: 4,
