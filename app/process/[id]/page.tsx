@@ -6,52 +6,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api-client"
-import type { Content } from "@/lib/data"
-import { ArrowRight, Calendar, ChevronRight, Clock, User, PlayCircle, Video, BookOpen, Eye, ArrowLeft } from "lucide-react"
+import { ArrowRight, Calendar, ChevronRight, Clock, User, PlayCircle, FileText } from "lucide-react"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
-
-type ContentFilter = "all" | "video" | "instruction"
 
 export default function ProcessPage() {
   const params = useParams()
-  const router = useRouter()
   const processId = params.id as string
   
   const [process, setProcess] = useState<any>(null)
-  const [allRelatedContent, setAllRelatedContent] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<ContentFilter>("all")
-  const [selectedContent, setSelectedContent] = useState<any | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         console.log("Fetching process with ID:", processId)
-        // Fetch process
         const { process: processData } = await apiClient.getProcessById(processId)
         console.log("Process data received:", processData)
         setProcess(processData)
-
-        // Collect all unique content IDs
-        const contentIds = new Set<string>()
-        processData.steps.forEach((step: any) => {
-          if (step.relatedContentIds && step.relatedContentIds.length > 0) {
-            step.relatedContentIds.forEach((id: string) => contentIds.add(id))
-          }
-        })
-
-        // Fetch all related content
-        if (contentIds.size > 0) {
-          const contentPromises = Array.from(contentIds).map((id) =>
-            apiClient.getContentById(id).catch(() => null)
-          )
-          const contents = await Promise.all(contentPromises)
-          const validContents = contents.filter((c) => c !== null).map((c) => c!.content)
-          setAllRelatedContent(validContents)
-          setSelectedContent(validContents[0] || null)
-        }
       } catch (error) {
         console.error("Error fetching process:", error)
         console.error("Process ID that failed:", processId)
@@ -61,10 +34,6 @@ export default function ProcessPage() {
     }
     fetchData()
   }, [processId])
-
-  const filteredContent = filter === "all" 
-    ? allRelatedContent 
-    : allRelatedContent.filter((item) => item.type === filter)
 
   if (loading) {
     return (
@@ -92,51 +61,24 @@ export default function ProcessPage() {
     )
   }
 
-  const getContentIcon = (type: string) => {
-    switch (type) {
-      case "video":
-        return <Video className="h-3 w-3" />
-      case "instruction":
-        return <BookOpen className="h-3 w-3" />
-      default:
-        return null
-    }
-  }
-
-  const getContentTypeLabel = (type: string) => {
-    switch (type) {
-      case "video":
-        return "Видео"
-      case "instruction":
-        return "Инструкция"
-      default:
-        return ""
-    }
-  }
-
-  const handleViewContent = (item: Content) => {
-    if (item.type === "video") {
-      setSelectedContent(item)
-    } else {
-      router.push(`/content/${item.id}`)
-    }
-  }
-
   return (
     <AuthGuard>
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container py-8 px-4">
-          {/* Back button and Header */}
-          <div className="mb-6">
-            <Link href="/dashboard">
-              <Button variant="ghost" className="mb-4 -ml-2">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                {"Назад к главной"}
-              </Button>
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+            <Link href="/dashboard" className="hover:text-foreground transition-colors">
+              {"Главная"}
             </Link>
-            <h1 className="text-3xl font-bold text-foreground mb-2">{process.name}</h1>
-            <p className="text-muted-foreground mb-4">{process.description}</p>
+            <ChevronRight className="h-4 w-4" />
+            <span className="text-foreground font-medium">{process.name}</span>
+          </div>
+
+          {/* Process Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-foreground mb-3">{process.name}</h1>
+            <p className="text-lg text-muted-foreground mb-4">{process.description}</p>
 
             <div className="flex flex-wrap gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -161,148 +103,6 @@ export default function ProcessPage() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Content filters - only show if there are related materials */}
-          {allRelatedContent.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-6">
-              <Button
-                variant={filter === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("all")}
-                className="gap-2"
-              >
-                {"Все материалы"} ({allRelatedContent.length})
-              </Button>
-              <Button
-                variant={filter === "video" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("video")}
-                className="gap-2"
-              >
-                <Video className="h-4 w-4" />
-                {"Видео"} ({allRelatedContent.filter((c) => c.type === "video").length})
-              </Button>
-              <Button
-                variant={filter === "instruction" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("instruction")}
-                className="gap-2"
-              >
-                <BookOpen className="h-4 w-4" />
-                {"Инструкции"} ({allRelatedContent.filter((c) => c.type === "instruction").length})
-              </Button>
-            </div>
-          )}
-
-          {/* Main content grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            {/* Video player - only show if there's selected video content */}
-            {selectedContent?.type === "video" && (
-              <div className="lg:col-span-2">
-                <Card className="overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="aspect-video bg-black">
-                      <iframe
-                        className="w-full h-full"
-                        src={selectedContent.videoUrl}
-                        title={selectedContent.title}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="mt-4">
-                  <CardHeader>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="secondary" className="gap-1">
-                        {getContentIcon(selectedContent.type)}
-                        {getContentTypeLabel(selectedContent.type)}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-2xl">{selectedContent.title}</CardTitle>
-                    <CardDescription className="text-base">{selectedContent.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{selectedContent.duration}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Eye className="h-4 w-4" />
-                        <span>
-                          {selectedContent.views} {"просмотров"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(selectedContent.uploadDate).toLocaleDateString("ru-RU")}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Content List - only show if there are related materials */}
-            {allRelatedContent.length > 0 && (
-              <div className={selectedContent?.type === "video" ? "lg:col-span-1" : "lg:col-span-3"}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {"Обучающие материалы"} ({filteredContent.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent
-                    className={`grid gap-3 max-h-[600px] overflow-y-auto ${
-                      selectedContent?.type === "video" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                    }`}
-                  >
-                    {filteredContent.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => handleViewContent(item)}
-                        className={`text-left p-3 rounded-lg transition-all duration-200 ${
-                          selectedContent?.id === item.id && item.type === "video"
-                            ? "bg-primary/10 border border-primary/50"
-                            : "bg-muted/50 hover:bg-muted border border-transparent hover:border-primary/30"
-                        }`}
-                      >
-                        <div className="flex items-start gap-2 mb-2">
-                          <Badge variant="outline" className="gap-1 text-xs">
-                            {getContentIcon(item.type)}
-                            {getContentTypeLabel(item.type)}
-                          </Badge>
-                        </div>
-                        <h3
-                          className={`font-semibold mb-1 text-sm leading-snug ${
-                            selectedContent?.id === item.id && item.type === "video" ? "text-primary" : "text-foreground"
-                          }`}
-                        >
-                          {item.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.description}</p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          {item.duration && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span>{item.duration}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            <span>{item.views}</span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
           </div>
 
           {/* Process Steps */}
@@ -337,7 +137,7 @@ export default function ProcessPage() {
                     </CardHeader>
 
                     <CardContent>
-                      <div className="flex flex-wrap gap-4 text-sm">
+                      <div className="flex flex-wrap gap-4 text-sm mb-4">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <User className="h-4 w-4" />
                           <span className="font-medium">{step.responsible}</span>
@@ -349,15 +149,91 @@ export default function ProcessPage() {
                           </div>
                         )}
                       </div>
+
+                      {step.relatedContentIds && step.relatedContentIds.length > 0 && (
+                        <div className="border-t pt-4 mt-4">
+                          <p className="text-sm font-semibold text-muted-foreground mb-3">{"Обучающие материалы:"}</p>
+                          <StepContent contentIds={step.relatedContentIds} />
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
               </div>
             </div>
           </div>
+
+          {/* Back button */}
+          <div className="mt-8">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
+            >
+              <ChevronRight className="h-4 w-4 rotate-180" />
+              {"Вернуться к списку"}
+            </Link>
+          </div>
         </main>
       </div>
     </AuthGuard>
+  )
+}
+
+// Component to handle loading and displaying step content
+function StepContent({ contentIds }: { contentIds: string[] }) {
+  const [contents, setContents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchContents = async () => {
+      try {
+        const contentPromises = contentIds.map((id) =>
+          apiClient.getContentById(id).catch(() => null)
+        )
+        const results = await Promise.all(contentPromises)
+        const validContents = results.filter((c) => c !== null).map((c) => c!.content)
+        setContents(validContents)
+      } catch (error) {
+        console.error("Error fetching step content:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchContents()
+  }, [contentIds])
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">{"Загрузка материалов..."}</p>
+  }
+
+  if (contents.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {contents.map((content) => (
+        <Link key={content.id} href={`/content/${content.id}`}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-auto py-2 px-3 hover:bg-accent/10 hover:border-accent transition-colors bg-transparent"
+          >
+            {content.type === "video" ? (
+              <PlayCircle className="h-4 w-4 mr-2 text-accent" />
+            ) : (
+              <FileText className="h-4 w-4 mr-2 text-accent" />
+            )}
+            <span className="text-sm">{content.title}</span>
+            {content.type === "video" && content.duration && (
+              <span className="text-xs text-muted-foreground ml-2">
+                {content.duration}
+              </span>
+            )}
+          </Button>
+        </Link>
+      ))}
+    </div>
   )
 }
 
