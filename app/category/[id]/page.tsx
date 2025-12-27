@@ -17,7 +17,8 @@ type ContentFilter = "all" | "video" | "instruction"
 export default function CategoryPage() {
   const params = useParams()
   const router = useRouter()
-  const categorySlug = params.id as string
+  // В Next.js 15+ params может быть Promise, поэтому нужна правильная обработка
+  const categorySlug = typeof params?.id === 'string' ? params.id : (Array.isArray(params?.id) ? params.id[0] : '')
   
   const [category, setCategory] = useState<any>(null)
   const [allContent, setAllContent] = useState<Content[]>([])
@@ -26,6 +27,13 @@ export default function CategoryPage() {
   const [selectedContent, setSelectedContent] = useState<Content | null>(null)
 
   useEffect(() => {
+    // Проверяем что slug получен
+    if (!categorySlug) {
+      console.log("No category slug provided")
+      setLoading(false)
+      return
+    }
+
     const loadData = async () => {
       try {
         console.log("Loading category with slug:", categorySlug)
@@ -36,6 +44,7 @@ export default function CategoryPage() {
         
         if (!foundCategory) {
           console.log("Category not found for slug:", categorySlug)
+          console.log("Available category slugs:", categoriesData.categories.map((c: any) => c.slug))
           setLoading(false)
           return
         }
@@ -73,7 +82,7 @@ export default function CategoryPage() {
     }
 
     loadData()
-  }, [categorySlug])
+  }, [categorySlug, router])
 
   const filteredContent = filter === "all" 
     ? allContent 
